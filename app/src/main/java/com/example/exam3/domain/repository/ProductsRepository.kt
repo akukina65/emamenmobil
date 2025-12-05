@@ -9,4 +9,8 @@ interface ProductsRepository {
 
 
     suspend fun createProduct(name: String): AuthResult<Product>  // Добавили
+
+    suspend fun updateProduct(id: String, name: String): AuthResult<Product> // Добавьте
+
+
 }

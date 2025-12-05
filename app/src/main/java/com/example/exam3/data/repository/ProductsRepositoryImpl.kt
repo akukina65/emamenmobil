@@ -56,4 +56,30 @@ class ProductsRepositoryImpl @Inject constructor(
             AuthResult.Failure(e)
         }
     }
+
+
+
+
+
+
+
+
+    // ProductsRepositoryImpl.kt - добавьте этот метод
+    override suspend fun updateProduct(id: String, name: String): AuthResult<Product> {
+        return try {
+            if (name.isBlank()) return AuthResult.Failure(Exception("Введите название"))
+            if (id.isBlank()) return AuthResult.Failure(Exception("Ошибка ID"))
+
+            val request = mapOf("name" to name)
+            val response = productsApi.updateProduct("eq.$id", request)
+
+            if (response.isSuccessful) {
+                AuthResult.Success(Product(id = id, name = name))
+            } else {
+                AuthResult.Failure(Exception("Ошибка обновления"))
+            }
+        } catch (e: Exception) {
+            AuthResult.Failure(e)
+        }
+    }
 }

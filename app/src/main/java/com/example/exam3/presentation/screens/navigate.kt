@@ -14,7 +14,7 @@ fun navigate()
 
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = "main"
     ) {
         composable("login") {
             LoginScreen(navController)
@@ -26,5 +26,6 @@ fun navigate()
         composable("createProduct") {
             CreateProductScreen(navController)
         }
+        composable("editProduct/{id}/{name}") { EditProductScreen(navController) }
     }
 }

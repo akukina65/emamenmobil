@@ -1,11 +1,13 @@
 package com.example.exam3.presentation.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.exam3.domain.model.Product
 import com.example.exam3.presentation.viewmodel.ProductsViewModel
 
 @Composable
@@ -90,8 +93,14 @@ fun ProductsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f)
             ) {
+                // ProductsScreen.kt - в LazyColumn
                 items(products) { product ->
-                    ProductCard(product = product)
+                    ProductCard(
+                        product = product,
+                        onEditClick = { id, name -> // ← Поменяли onClick на onEditClick
+                            navController.navigate("editProduct/${id}/${name}")
+                        }
+                    )
                 }
             }
         }
@@ -121,14 +130,22 @@ fun ProductsScreen(
     }
 }
 
-// Карточка продукта
 @Composable
-fun ProductCard(product: com.example.exam3.domain.model.Product) {
-    Card(Modifier.fillMaxWidth()) {
-        Text(
-            text = product.name,
-            modifier = Modifier.padding(16.dp),
-            style = MaterialTheme.typography.bodyLarge
-        )
+fun ProductCard(
+    product: Product,
+    onEditClick: (String, String) -> Unit = { _, _ -> }
+) {
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onEditClick(product.id, product.name) }
+    ) {
+        Row(
+            Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(product.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+            Icon(Icons.Default.Edit, null, tint = MaterialTheme.colorScheme.primary)
+        }
     }
 }

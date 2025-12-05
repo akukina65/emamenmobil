@@ -8,6 +8,7 @@ import com.example.exam3.domain.repository.AuthRepository
 import com.example.exam3.domain.repository.ProductsRepository
 import com.example.exam3.domain.usecase.GetProductsUseCase
 import com.example.exam3.domain.usecase.LoginUseCase
+import com.example.exam3.domain.usecase.UpdateProductUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -43,5 +44,13 @@ object AuthNodule {
     @Singleton
     fun provideGetProductsUseCase(repository: ProductsRepository): GetProductsUseCase {
         return GetProductsUseCase(repository)
+    }
+
+
+    // AuthModule.kt (добавьте)
+    @Provides
+    @Singleton
+    fun provideUpdateProductUseCase(repository: ProductsRepository): UpdateProductUseCase {
+        return UpdateProductUseCase(repository)
     }
 }
