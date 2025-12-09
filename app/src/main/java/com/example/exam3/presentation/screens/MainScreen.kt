@@ -7,18 +7,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.exam3.domain.model.Product
 import com.example.exam3.presentation.viewmodel.ProductsViewModel
+import java.net.URLEncoder
 
 @Composable
 fun ProductsScreen(
@@ -30,8 +37,28 @@ fun ProductsScreen(
     val error = viewModel.error.value
     val searchText = viewModel.searchQuery.value
 
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var productToDelete by remember { mutableStateOf<Product?>(null) }
+
     LaunchedEffect(Unit) {
         viewModel.loadProducts()
+    }
+
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            product = productToDelete,
+            onDismiss = {
+                showDeleteDialog = false
+                productToDelete = null
+            },
+            onConfirm = {
+                productToDelete?.let { product ->
+                    viewModel.deleteProduct(product.id) {
+                        productToDelete = null
+                    }
+                }
+            }
+        )
     }
 
     Column(
@@ -39,113 +66,105 @@ fun ProductsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Заголовок
-        Text(
-            text = "Продукты",
-            style = MaterialTheme.typography.headlineLarge
-        )
+        // Поиск
+
 
         Spacer(Modifier.height(16.dp))
-
-        // Поле поиска
         OutlinedTextField(
             value = searchText,
             onValueChange = { viewModel.updateSearchQuery(it) },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Поиск...") },
-            leadingIcon = { Icon(Icons.Default.Search, "Поиск") },
-            trailingIcon = {
-                if (searchText.isNotBlank()) {
-                    IconButton(onClick = { viewModel.clearSearch() }) {
-                        Icon(Icons.Default.Close, "Очистить")
-                    }
-                }
-            },
+            placeholder = { Text("Поиск") },
             singleLine = true
         )
 
         Spacer(Modifier.height(16.dp))
 
-        // Проверка состояний
         if (loading) {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else if (error != null) {
-            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(error, color = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = { viewModel.loadProducts() }) {
-                    Text("Повторить")
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Ошибка")
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { viewModel.loadProducts() }) {
+                        Text("Повторить")
+                    }
                 }
             }
         } else if (products.isEmpty()) {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
-                if (searchText.isNotBlank()) {
-                    Text("Ничего не найдено")
-                } else {
-                    Text("Нет данных")
-                }
+                Text("Нет данных")
             }
-        } else {
-            // Список продуктов
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                // ProductsScreen.kt - в LazyColumn
-                items(products) { product ->
-                    ProductCard(
-                        product = product,
-                        onEditClick = { id, name -> // ← Поменяли onClick на onEditClick
-                            navController.navigate("editProduct/${id}/${name}")
-                        }
-                    )
-                }
+        }  else {
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.weight(1f)
+        ) {
+            items(products) { product ->
+                SimpleProductCard(
+                    product = product,
+                    onEditClick = { id, name, description, year ->
+
+                        navController.navigate("editProduct/$id/$name/$description/$year")
+                    },
+                    onDeleteClick = { productId ->
+                        productToDelete = viewModel.findProductById(productId)
+                        showDeleteDialog = true
+                    }
+                )
             }
         }
+    }
 
-        // Обычная кнопка внизу
+
+        // Кнопка добавления
         Button(
-            onClick = {
-                navController.navigate("createProduct") {
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
+            onClick = { navController.navigate("createProduct") },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(
-                Icons.Default.Add,
-                contentDescription = "Добавить",
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text("Добавить продукт")
+            Text("+ Добавить")
         }
     }
 }
 
 @Composable
-fun ProductCard(
+fun SimpleProductCard(
     product: Product,
-    onEditClick: (String, String) -> Unit = { _, _ -> }
+    onEditClick: (String, String, String, Int) -> Unit = { _, _, _, _ -> },
+    onDeleteClick: (String) -> Unit = { _ -> }
 ) {
     Card(
-        Modifier
-            .fillMaxWidth()
-            .clickable { onEditClick(product.id, product.name) }
+        Modifier.fillMaxWidth()
     ) {
         Row(
-            Modifier.padding(16.dp),
+            Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(product.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-            Icon(Icons.Default.Edit, null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                text = product.name,
+                Modifier
+                    .weight(1f)
+                    .clickable {
+                        onEditClick(product.id, product.name, product.decription, product.year)
+                    }
+            )
+
+            IconButton(
+                onClick = { onDeleteClick(product.id) },
+                modifier = Modifier.size(20.dp)
+            ) {
+                Icon(Icons.Default.Delete, "Удалить")
+            }
+
+            IconButton(
+                onClick = { onEditClick(product.id, product.name, product.decription, product.year) },
+                modifier = Modifier.size(20.dp)
+            ) {
+                Icon(Icons.Default.Edit, "Изменить")
+            }
         }
     }
 }

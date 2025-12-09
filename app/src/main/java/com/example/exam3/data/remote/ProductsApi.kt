@@ -4,6 +4,7 @@ import com.example.exam3.data.dto.ProductDto
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
@@ -26,5 +27,10 @@ interface ProductsApi {
     suspend fun updateProduct(
         @Query("id") id: String, // Для Supabase: eq.{id}
         @Body product: Map<String, String>
+    ): Response<Void>
+
+    @DELETE("rest/v1/product")  // Добавляем удаление
+    suspend fun deleteProduct(
+        @Query("id") id: String
     ): Response<Void>
 }

@@ -8,9 +8,18 @@ interface ProductsRepository {
     suspend fun getProducts(): AuthResult<List<Product>>
 
 
-    suspend fun createProduct(name: String): AuthResult<Product>  // Добавили
+    suspend fun createProduct(
+        name: String,
+        description: String,
+        year: Int
+    ): AuthResult<Product>
 
-    suspend fun updateProduct(id: String, name: String): AuthResult<Product> // Добавьте
+    suspend fun updateProduct(
+        id: String,
+        name: String,
+        description: String,
+        year: Int
+    ): AuthResult<Product>
 
-
+    suspend fun deleteProduct(id: String): AuthResult<Unit>  // Добавляем удаление
 }

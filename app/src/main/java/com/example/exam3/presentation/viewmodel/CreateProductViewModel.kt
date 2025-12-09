@@ -1,15 +1,11 @@
 package com.example.exam3.presentation.viewmodel
 
 import androidx.compose.runtime.State
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.exam3.domain.model.AuthResult
-import com.example.exam3.domain.model.Product
 import com.example.exam3.domain.usecase.CreateProductUseCase
-import com.example.exam3.domain.usecase.GetProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,6 +17,12 @@ class CreateProductViewModel @Inject constructor(
 
     private val _productName = mutableStateOf("")
     val productName: State<String> = _productName
+
+    private val _description = mutableStateOf("")
+    val description: State<String> = _description
+
+    private val _year = mutableStateOf("")
+    val year: State<String> = _year
 
     private val _error = mutableStateOf<String?>(null)
     val error: State<String?> = _error
@@ -34,7 +36,16 @@ class CreateProductViewModel @Inject constructor(
     fun updateName(name: String) {
         _productName.value = name
         if (_error.value != null) _error.value = null
-        // Не сбрасываем isSuccess здесь, чтобы пользователь увидел сообщение
+    }
+
+    fun updateDescription(description: String) {
+        _description.value = description
+        if (_error.value != null) _error.value = null
+    }
+
+    fun updateYear(year: String) {
+        _year.value = year
+        if (_error.value != null) _error.value = null
     }
 
     fun createProduct() {
@@ -43,12 +54,33 @@ class CreateProductViewModel @Inject constructor(
             return
         }
 
+        if (_description.value.isBlank()) {
+            _error.value = "Введите описание"
+            return
+        }
+
+        if (_year.value.isBlank()) {
+            _error.value = "Введите год"
+            return
+        }
+
+        val yearInt = try {
+            _year.value.toInt()
+        } catch (e: NumberFormatException) {
+            _error.value = "Введите корректный год"
+            return
+        }
+
         _error.value = null
         _isLoading.value = true
         _isSuccess.value = false
 
         viewModelScope.launch {
-            when (val result = createProductUseCase(_productName.value)) {
+            when (val result = createProductUseCase(
+                name = _productName.value,
+                description = _description.value,
+                year = yearInt
+            )) {
                 is AuthResult.Success -> {
                     _isSuccess.value = true
                 }
@@ -59,6 +91,4 @@ class CreateProductViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
-
-
 }

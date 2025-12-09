@@ -26,6 +26,8 @@ fun navigate()
         composable("createProduct") {
             CreateProductScreen(navController)
         }
-        composable("editProduct/{id}/{name}") { EditProductScreen(navController) }
+        composable("editProduct/{id}/{name}/{description}/{year}") { backStackEntry ->
+            EditProductScreen(navController)
+        }
     }
 }

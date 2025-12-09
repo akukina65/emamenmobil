@@ -1,12 +1,16 @@
 package com.example.exam3.presentation.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -19,25 +23,25 @@ fun CreateProductScreen(
     viewModel: CreateProductViewModel = hiltViewModel()
 ) {
     val productName by viewModel.productName
+    val description by viewModel.description
+    val year by viewModel.year
     val error by viewModel.error
     val isLoading by viewModel.isLoading
     val isSuccess by viewModel.isSuccess
 
-    // Автоматический возврат при успехе
     LaunchedEffect(isSuccess) {
         if (isSuccess) {
-            delay(1000) // Ждем секунду
             navController.popBackStack()
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar( // Теперь можно использовать TopAppBar с аннотацией
-                title = { Text("Новый продукт") },
+            TopAppBar(
+                title = { Text("Новый") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.Default.ArrowBack, "Назад")
                     }
                 }
             )
@@ -48,61 +52,53 @@ fun CreateProductScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
-            // Форма
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            OutlinedTextField(
+                value = productName,
+                onValueChange = { viewModel.updateName(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Название") },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = { viewModel.updateDescription(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Описание") },
+                singleLine = true
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = year,
+                onValueChange = { viewModel.updateYear(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Год") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+
+            if (error != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(error!!, color = MaterialTheme.colorScheme.error)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.createProduct() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading && productName.isNotBlank() && description.isNotBlank()
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    // Поле ввода
-                    OutlinedTextField(
-                        value = productName,
-                        onValueChange = { viewModel.updateName(it) },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Название") },
-                        placeholder = { Text("Введите название продукта") },
-                        singleLine = true,
-                        isError = error != null
-                    )
-
-                    // Ошибка
-                    if (error != null) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = "Ошибка: $error",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-                    // Кнопка
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = { viewModel.createProduct() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !isLoading && productName.isNotBlank()
-                    ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Создать")
-                        }
-                    }
-
-                    // Сообщение об успехе
-                    if (isSuccess) {
-                        Spacer(Modifier.height(16.dp))
-                        Text(
-                            text = "✓ Продукт создан!",
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                if (isLoading) {
+                    CircularProgressIndicator(Modifier.size(20.dp))
+                } else {
+                    Text("Создать")
                 }
             }
         }

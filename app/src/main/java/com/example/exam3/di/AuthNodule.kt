@@ -6,6 +6,7 @@ import com.example.exam3.data.repository.AuthRepositoruIml
 import com.example.exam3.data.repository.ProductsRepositoryImpl
 import com.example.exam3.domain.repository.AuthRepository
 import com.example.exam3.domain.repository.ProductsRepository
+import com.example.exam3.domain.usecase.DeleteProductUseCase
 import com.example.exam3.domain.usecase.GetProductsUseCase
 import com.example.exam3.domain.usecase.LoginUseCase
 import com.example.exam3.domain.usecase.UpdateProductUseCase
@@ -52,5 +53,12 @@ object AuthNodule {
     @Singleton
     fun provideUpdateProductUseCase(repository: ProductsRepository): UpdateProductUseCase {
         return UpdateProductUseCase(repository)
+    }
+
+
+    @Provides
+    @Singleton
+    fun provideDeleteProductUseCase(repository: ProductsRepository): DeleteProductUseCase {
+        return DeleteProductUseCase(repository)
     }
 }

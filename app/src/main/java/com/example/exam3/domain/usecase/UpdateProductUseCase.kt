@@ -8,7 +8,12 @@ import javax.inject.Inject
 class UpdateProductUseCase @Inject constructor(
     private val repository: ProductsRepository
 ) {
-    suspend operator fun invoke(id: String, name: String): AuthResult<Product> {
-        return repository.updateProduct(id, name)
+    suspend operator fun invoke(
+        id: String,
+        name: String,
+        description: String,
+        year: Int
+    ): AuthResult<Product> {
+        return repository.updateProduct(id, name, description, year)
     }
 }

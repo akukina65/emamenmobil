@@ -1,12 +1,11 @@
 package com.example.exam3.presentation.viewmodel
 
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.exam3.domain.model.AuthResult
 import com.example.exam3.domain.model.Product
+import com.example.exam3.domain.usecase.DeleteProductUseCase
 import com.example.exam3.domain.usecase.GetProductsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -14,69 +13,81 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProductsViewModel @Inject constructor(
-    private val getProductsUseCase: GetProductsUseCase
+    private val getProductsUseCase: GetProductsUseCase,
+    private val deleteProductUseCase: DeleteProductUseCase
 ) : ViewModel() {
 
-    // Все продукты (оригинальный список)
-    private var _allProducts by mutableStateOf<List<Product>>(emptyList())
+    private val _products = mutableStateOf<List<Product>>(emptyList())
+    val products = _products
 
-    // Отфильтрованные продукты (для отображения) - ДЕЛАЕМ ПРОСТОЙ MutableState
-    val filteredProducts = mutableStateOf<List<Product>>(emptyList())
+    private val _filteredProducts = mutableStateOf<List<Product>>(emptyList())
+    val filteredProducts = _filteredProducts
 
-    // Текст поиска - ДЕЛАЕМ ПРОСТОЙ MutableState
-    val searchQuery = mutableStateOf("")
+    private val _loading = mutableStateOf(false)
+    val loading = _loading
 
-    // Состояния - ДЕЛАЕМ ПРОСТЫЕ MutableState
-    val loading = mutableStateOf(false)
-    val error = mutableStateOf<String?>(null)
+    private val _error = mutableStateOf<String?>(null)
+    val error = _error
 
-    // Загрузка продуктов
+    private val _searchQuery = mutableStateOf("")
+    val searchQuery = _searchQuery
+
     fun loadProducts() {
-        if (loading.value) return
-
-        loading.value = true
-        error.value = null
-
+        _loading.value = true
+        _error.value = null
         viewModelScope.launch {
             when (val result = getProductsUseCase()) {
                 is AuthResult.Success -> {
-                    _allProducts = result.data
-                    applySearchFilter() // Применяем текущий фильтр
-                    error.value = null
+                    _products.value = result.data
+                    applyFilter(_searchQuery.value)
                 }
                 is AuthResult.Failure -> {
-                    error.value = result.exception.message ?: "Неизвестная ошибка"
-                    _allProducts = emptyList()
-                    filteredProducts.value = emptyList()
+                    _error.value = result.exception.message ?: "Ошибка загрузки"
                 }
             }
-            loading.value = false
+            _loading.value = false
         }
     }
 
-    // Обновление поискового запроса
     fun updateSearchQuery(query: String) {
-        searchQuery.value = query
-        applySearchFilter()
+        _searchQuery.value = query
+        applyFilter(query)
     }
 
-    // Очистка поиска
-    fun clearSearch() {
-        searchQuery.value = ""
-        filteredProducts.value = _allProducts
-    }
 
-    // Применение фильтра поиска
-    private fun applySearchFilter() {
-        if (searchQuery.value.isBlank()) {
-            filteredProducts.value = _allProducts
+
+    private fun applyFilter(query: String) {
+        _filteredProducts.value = if (query.isBlank()) {
+            _products.value
         } else {
-            val query = searchQuery.value.lowercase()
-            filteredProducts.value = _allProducts.filter { product ->
-                product.name.lowercase().contains(query)
+            _products.value.filter { product ->
+                product.name.contains(query, ignoreCase = true)
+
             }
         }
     }
 
+    // Метод для удаления продукта
+    fun deleteProduct(id: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _loading.value = true
+            when (val result = deleteProductUseCase(id)) {
+                is AuthResult.Success -> {
+                    // Удаляем продукт из списка
+                    _products.value = _products.value.filter { it.id != id }
+                    applyFilter(_searchQuery.value)
+                    onSuccess()
+                }
+                is AuthResult.Failure -> {
+                    _error.value = result.exception.message ?: "Ошибка удаления"
+                }
+            }
+            _loading.value = false
+        }
+    }
 
+    // Поиск продукта по ID для отображения в диалоге
+    fun findProductById(id: String): Product? {
+        return _products.value.find { it.id == id }
+    }
 }
